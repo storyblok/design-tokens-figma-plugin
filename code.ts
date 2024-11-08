@@ -125,6 +125,111 @@ async function processCollection(variableColection: VariableCollection) {
   }
 }
 
+const finalJSON = {}
+
+const createJsonFiles = () => {
+  // console.log('variablesDb', variablesDb)
+  const sizeJson = variablesDb['size']
+  finalJSON['sizes.json'] = {
+    file: 'sizes.json',
+    content: {
+      size: sizeJson
+    }
+  }
+
+  const typographyJson = variablesDb['typography']
+  finalJSON['typography.json'] = {
+    file: 'typography.json',
+    content: {
+      typography: typographyJson
+    }
+  }
+
+  const borderJson = variablesDb['border']
+  finalJSON['borders.json'] = {
+    file: 'borders.json',
+    content: {
+      border: borderJson
+    }
+  }
+
+  const opacityJson = variablesDb['opacity']
+  finalJSON['opacity/base.json'] = {
+    file: 'base.json',
+    content: {
+      opacity: {
+        level: opacityJson.default.level
+      }
+    }
+  }
+  finalJSON['opacity/default.json'] = {
+    file: 'default.json',
+    content: {
+      opacity: {
+        background: opacityJson.default.background
+      }
+    }
+  }
+  finalJSON['opacity/dark.json'] = {
+    file: 'dark.json',
+    content: {
+      opacity: {
+        background: opacityJson.dark.background
+      }
+    }
+  }
+  finalJSON['opacity/dark-contrast.json'] = {
+    file: 'dark-contrast.json',
+    content: {
+      opacity: {
+        background: opacityJson['dark-contrast'].background
+      }
+    }
+  }
+  finalJSON['opacity/light-contrast.json'] = {
+    file: 'light-contrast.json',
+    content: {
+      opacity: {
+        background: opacityJson['light-contrast'].background
+      }
+    }
+  }
+
+  const baseColor = variablesDb['base-color']
+  finalJSON['color/primitives.json'] = {
+    file: 'primitives.json',
+    content: {
+      'base-color': baseColor
+    }
+  }
+
+  const colorJson = variablesDb['color']
+  finalJSON['color/default.json'] = {
+    file: 'default.json',
+    content: {
+      color: colorJson.default
+    }
+  }
+  finalJSON['color/dark.json'] = {
+    file: 'dark.json',
+    content: {
+      color: colorJson.dark
+    }
+  }
+  finalJSON['color/dark-contrast.json'] = {
+    file: 'dark-contrast.json',
+    content: {
+      color: colorJson['dark-contrast']
+    }
+  }
+  finalJSON['color/light-contrast.json'] = {
+    file: 'light-contrast.json',
+    content: {
+      color: colorJson['light-contrast']
+    }
+  }
+}
+
 async function exportToJSON() {
   // VariableCollection
   // https://www.figma.com/plugin-docs/api/VariableCollection/
@@ -132,8 +237,9 @@ async function exportToJSON() {
   for (const collection of collections) {
     await processCollection(collection)
   }
+  createJsonFiles()
   
-  figma.ui.postMessage({ type: 'EXPORT_RESULT', variables: variablesDb })
+  figma.ui.postMessage({ type: 'EXPORT_RESULT', variables: finalJSON })
 }
 
 figma.ui.onmessage = (message) => {
