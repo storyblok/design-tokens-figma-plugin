@@ -1,0 +1,20 @@
+{
+  "name": "blok-ink-design-tokens-generator",
+  "id": "1436463983774673358",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma"
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  },
+  "ui": {
+    "export": "export.html"
+  }
+}
