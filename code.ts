@@ -35,8 +35,20 @@ const MODE_MAPPING = {
   [key: string]: string
 }
 
+type TokenData = {
+  [key: string]: {
+    [key: string]: Token
+  }
+} | {
+  [key: string]: {
+    [key: string]: {
+      [key: string]: Token
+    }
+  }
+}
+
 const variablesDb = {} as {
-  [key in keyof typeof COLLECTION_MAPPING]: Record<string, Record<string, Record<string, Token>>> | Record<string, Record<string, Token>>
+  [key in keyof typeof COLLECTION_MAPPING]: TokenData
 }
 
 const rgbToHex = (data: VariableValue) => {
@@ -67,8 +79,55 @@ const isVariableAlias = (value: VariableValue) => {
   return typeof value === 'object' && 'type' in value && 'id' in value
 }
 
+const getTokenValue = async (variable: Variable, modeId: string): Promise<Token> => {
+  const { resolvedType } = variable
+  const value = variable.valuesByMode[modeId]
+  const token = {
+    // name: name,
+    $type: resolvedType === 'COLOR' ? 'color' : 'number',
+    $value: value,
+    // id: value.id,
+    // alias: undefined as string | undefined,
+  }
+  if (isVariableAlias(value) && value.type === 'VARIABLE_ALIAS') {
+    const currentVar = await figma.variables.getVariableByIdAsync(
+      value.id
+    );
+    const aliasCollection = await figma.variables.getVariableCollectionByIdAsync(currentVar?.variableCollectionId || '')
+    const aliasCollectionName = getCollectionName(aliasCollection)
+    token.$value = `{${aliasCollectionName}.${currentVar?.name.replace(/\//g, '.')}}`;
+  } else {
+    // token.id = variable.id;
+    token.$value = resolvedType === 'COLOR' ? rgbToHex(value) : value;
+  }
+  return token
+}
+
+const buildTokenData = async (modeId: string, variable: Variable, variables: TokenData = {}) => {
+  const howManySlashes = variable.name.split('/').length
+  // for example, background/primary
+  // it should be: { background: { primary: { $type: 'color', $value: '#000000' } } }
+  if (howManySlashes === 2) {
+    const [group, name] = variable.name.split('/')
+    variables[group] = variables[group] || {}
+    variables[group][name] = await getTokenValue(variable, modeId)
+    return variables
+  }
+
+  // for example, button/background/primary
+  // it should be: { button: { background: { primary: { $type: 'color', $value: '#000000' } } } }
+  if (howManySlashes === 3) {
+    const [group, parent, name] = variable.name.split('/')
+    variables[group] = variables[group] || {}
+    variables[group][parent] = variables[group][parent] || {}
+    
+    variables[group][parent][name] = await getTokenValue(variable, modeId)
+    return variables
+  }
+}
+
 const getVariablesFromCollection = async (modeId: string, variableIds: string[]) => {
-  const variables = {} as Record<string, Record<string, Token>>
+  const variables = {} as TokenData
   for (const variableId of variableIds) {
     const variable = await figma.variables.getVariableByIdAsync(variableId)
 
@@ -79,28 +138,7 @@ const getVariablesFromCollection = async (modeId: string, variableIds: string[])
     const { resolvedType } = variable
     const value = variable.valuesByMode[modeId]
     if (value !== undefined && ['COLOR', 'FLOAT'].includes(resolvedType)) {
-      const [group, name] = variable.name.split('/')
-      variables[group] = variables[group] || {}
-      const token = {
-        // name: name,
-        $type: resolvedType === 'COLOR' ? 'color' : 'number',
-        $value: value,
-        // id: value.id,
-        // alias: undefined as string | undefined,
-      }
-      if (isVariableAlias(value) && value.type === 'VARIABLE_ALIAS') {
-        const currentVar = await figma.variables.getVariableByIdAsync(
-          value.id
-        );
-        const aliasCollection = await figma.variables.getVariableCollectionByIdAsync(currentVar?.variableCollectionId || '')
-        const aliasCollectionName = getCollectionName(aliasCollection)
-        token.$value = `{${aliasCollectionName}.${currentVar?.name.replace(/\//g, '.')}}`;
-        // token.alias = currentVar?.id;
-      } else {
-        // token.id = variable.id;
-        token.$value = resolvedType === 'COLOR' ? rgbToHex(value) : value;
-      }
-      variables[group][name] = token
+      await buildTokenData(modeId, variable, variables)
     }
   }
   return variables
@@ -125,10 +163,15 @@ async function processCollection(variableColection: VariableCollection) {
   }
 }
 
-const finalJSON = {}
 
 const createJsonFiles = () => {
   // console.log('variablesDb', variablesDb)
+  const finalJSON = {} as {
+    [key: string]: {
+      file: string
+      content: TokenData
+    }
+  }
   const sizeJson = variablesDb['size']
   finalJSON['sizes.json'] = {
     file: 'sizes.json',
@@ -166,7 +209,9 @@ const createJsonFiles = () => {
     file: 'default.json',
     content: {
       opacity: {
-        background: opacityJson.default.background
+        default: {
+          background: opacityJson.default.background
+        }
       }
     }
   }
@@ -174,7 +219,9 @@ const createJsonFiles = () => {
     file: 'dark.json',
     content: {
       opacity: {
-        background: opacityJson.dark.background
+        dark: {
+          background: opacityJson.dark.background
+        }
       }
     }
   }
@@ -182,7 +229,9 @@ const createJsonFiles = () => {
     file: 'dark-contrast.json',
     content: {
       opacity: {
-        background: opacityJson['dark-contrast'].background
+        'dark-contrast': {
+          background: opacityJson['dark-contrast'].background
+        }
       }
     }
   }
@@ -190,13 +239,15 @@ const createJsonFiles = () => {
     file: 'light-contrast.json',
     content: {
       opacity: {
-        background: opacityJson['light-contrast'].background
+        'light-contrast': {
+          background: opacityJson['light-contrast'].background
+        }
       }
     }
   }
 
   const baseColor = variablesDb['base-color']
-  finalJSON['color/primitives.json'] = {
+  finalJSON['colors/primitives.json'] = {
     file: 'primitives.json',
     content: {
       'base-color': baseColor
@@ -204,30 +255,40 @@ const createJsonFiles = () => {
   }
 
   const colorJson = variablesDb['color']
-  finalJSON['color/default.json'] = {
+  finalJSON['colors/default.json'] = {
     file: 'default.json',
     content: {
-      color: colorJson.default
+      color: {
+        default: colorJson.default
+      }
     }
   }
-  finalJSON['color/dark.json'] = {
+  finalJSON['colors/dark.json'] = {
     file: 'dark.json',
     content: {
-      color: colorJson.dark
+      color: {
+        dark: colorJson.dark
+      }
     }
   }
-  finalJSON['color/dark-contrast.json'] = {
+  finalJSON['colors/dark-contrast.json'] = {
     file: 'dark-contrast.json',
     content: {
-      color: colorJson['dark-contrast']
+      color: {
+        'dark-contrast': colorJson['dark-contrast']
+      }
     }
   }
-  finalJSON['color/light-contrast.json'] = {
+  finalJSON['colors/light-contrast.json'] = {
     file: 'light-contrast.json',
     content: {
-      color: colorJson['light-contrast']
+      color: {
+        'light-contrast': colorJson['light-contrast']
+      }
     }
   }
+
+  return JSON.parse(JSON.stringify(finalJSON).replaceAll('base-color', 'color'))
 }
 
 async function exportToJSON() {
@@ -237,9 +298,9 @@ async function exportToJSON() {
   for (const collection of collections) {
     await processCollection(collection)
   }
-  createJsonFiles()
+  const result = createJsonFiles()
   
-  figma.ui.postMessage({ type: 'EXPORT_RESULT', variables: finalJSON })
+  figma.ui.postMessage({ type: 'EXPORT_RESULT', tokens: result })
 }
 
 figma.ui.onmessage = (message) => {
