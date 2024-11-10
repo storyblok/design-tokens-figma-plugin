@@ -81,11 +81,11 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
   <button id="download" type="button"> Download </button>
 </main>
 <script>
-  let variables = {}
+  let tokens = {}
   window.onmessage = ({ data: { pluginMessage } }) => {
     if (pluginMessage.type === 'EXPORT_RESULT') {
-      variables = pluginMessage.variables
-      document.querySelector('textarea').innerHTML = JSON.stringify(pluginMessage.variables, null, 2)
+      tokens = pluginMessage.tokens
+      document.querySelector('textarea').innerHTML = JSON.stringify(pluginMessage.tokens, null, 2)
     }
   }
   document.getElementById('export').addEventListener('click', () => {
@@ -101,9 +101,9 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
     const element = document.createElement('a')
     element.setAttribute(
       'href',
-      `data:${mimeType};charset=utf-8,` + encodeURIComponent(JSON.stringify(variables, null, 2)),
+      `data:${mimeType};charset=utf-8,` + encodeURIComponent(JSON.stringify(tokens, null, 2)),
     )
-    element.setAttribute('download', 'variables.json')
+    element.setAttribute('download', 'tokens.json')
 
     element.style.display = 'none'
     document.body.appendChild(element)
