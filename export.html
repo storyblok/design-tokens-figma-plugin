@@ -93,11 +93,26 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
 </style>
 
 <main id="app">
-  <multiselect v-model="value" :options="options"></multiselect>
+  <multiselect v-model="value" :options="options" :multiple="true" :close-on-select="false" :clear-on-select="false"
+  :preserve-search="true" placeholder="Pick some" :preselect-first="true" disabled="true">
+    <template #selection="{ values, search, isOpen }">
+      <span
+        class="multiselect__single"
+        v-if="values.length"
+        v-show="!isOpen"
+      >
+        <!-- {{ values.length }} options selected -->
+        All Variables Selected
+      </span>
+    </template>
+
+  </multiselect>
 
   <textarea placeholder="Exported variables will render here..." readonly></textarea>
 
-  <button 
+
+  <button
+    v-show="!showDownloadButton"
     id="export"
     type="button" 
     @click="exportJSON"
@@ -106,11 +121,11 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
   </button>
 
   <button 
-    v-if="showDownloadButton"
+    v-show="showDownloadButton"
     id="download"
     type="button"
     @click="downloadJSON()"
-  >
+  > 
     Download
   </button>
 </main>
@@ -120,15 +135,22 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
   
   createApp({
     components: {
-      Multiselect: window['vue-multiselect'].default
+        Multiselect: window['vue-multiselect'].default
     },
     setup(props) {
-      // Global Variables
       let tokens = ref({})
       let showDownloadButton = ref(false)
 
-      // Multiselect Variables
-      let value = ref(null)
+      let value = ref([
+        'Primitive colors', 
+        'Semantic colors', 
+        'Primitive Typography',
+        'Semantic Typography',
+        'Sizes',
+        'Border',
+        'Opacity',
+        'shadow'
+      ])
       let options = ref([
         'Primitive colors', 
         'Semantic colors', 
@@ -168,6 +190,7 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
         value,
         options,
         exportJSON,
+        // downloadJSON
       }
     },
     mounted() {
