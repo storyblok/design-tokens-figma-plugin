@@ -2,10 +2,9 @@
 Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-export/export.html
 -->
 
-<head>
-  <script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
-  <link href="https://unpkg.com/slim-select@latest/dist/slimselect.css" rel="stylesheet"></link>
-</head>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
+<link href="https://unpkg.com/slim-select@latest/dist/slimselect.css" rel="stylesheet"></link>
 
 <style type="text/css" scoped>
   :root {
@@ -79,15 +78,8 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
   }
 </style>
 
-<main>
-  <!-- <button id="export" type="button"> Export Variables </button> -->
-
-  <!-- <textarea placeholder="Exported variables will render here..." readonly></textarea> -->
-
-  <!-- <button id="download" type="button"> Download </button> -->
-
-
-  <div id="generate-screen">
+<main id="app">
+  <!-- <div id="generate-screen">
     <select id="selectElement" multiple>
       <optgroup label="Variables" data-selectall="true" data-selectalltext="Select them all!">
         <option value="primitive-colors">Primitive colors</option>
@@ -100,45 +92,61 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
         <option value="shadow">Shadow</option>
       </optgroup>
     </select>
-  </div>
+  </div> -->
+
+  <button id="export" type="button"> Export Variables </button>
+
+  <textarea placeholder="Exported variables will render here..." readonly></textarea>
+
+  <button id="download" type="button"> Download </button>
+
+  {{ message }}
 </main>
+
 <script>
-  new SlimSelect({
-    select: '#selectElement',
-    // selectAll: true,
-    // selectAllText: 'Select them all!',
-  })
-  
-  let tokens = {}
-  window.onmessage = ({ data: { pluginMessage } }) => {
-    if (pluginMessage.type === 'EXPORT_RESULT') {
-      tokens = pluginMessage.tokens
-      document.querySelector('textarea').innerHTML = JSON.stringify(pluginMessage.tokens, null, 2)
+  const { createApp, ref } = Vue
+
+  createApp({
+    setup() {
+      const message = ref('Hello vue!')
+      let tokens = {}
+
+      return {
+        message
+      }
+    },
+    mounted() {
+      let tokens = {}
+      window.onmessage = ({ data: { pluginMessage } }) => {
+        if (pluginMessage.type === 'EXPORT_RESULT') {
+          tokens = pluginMessage.tokens
+          document.querySelector('textarea').innerHTML = JSON.stringify(pluginMessage.tokens, null, 2)
+        }
+      }
+      document.getElementById('export').addEventListener('click', () => {
+        parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
+      })
+
+      function downloadFile(filename, data, mimeType) {
+
+      }
+
+      document.getElementById('download').addEventListener('click', async () => {
+        const mimeType = 'application/json'
+        const element = document.createElement('a')
+        element.setAttribute(
+          'href',
+          `data:${mimeType};charset=utf-8,` + encodeURIComponent(JSON.stringify(tokens, null, 2)),
+        )
+        element.setAttribute('download', 'tokens.json')
+
+        element.style.display = 'none'
+        document.body.appendChild(element)
+
+        element.click()
+
+        document.body.removeChild(element)
+      })
     }
-  }
-  document.getElementById('export').addEventListener('click', () => {
-    parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
-  })
-
-  function downloadFile(filename, data, mimeType) {
-
-  }
-
-  document.getElementById('download').addEventListener('click', async () => {
-    const mimeType = 'application/json'
-    const element = document.createElement('a')
-    element.setAttribute(
-      'href',
-      `data:${mimeType};charset=utf-8,` + encodeURIComponent(JSON.stringify(tokens, null, 2)),
-    )
-    element.setAttribute('download', 'tokens.json')
-
-    element.style.display = 'none'
-    document.body.appendChild(element)
-
-    element.click()
-
-    document.body.removeChild(element)
-  })
-
+  }).mount('#app')
 </script>
