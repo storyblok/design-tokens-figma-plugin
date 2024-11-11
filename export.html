@@ -2,6 +2,11 @@
 Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-export/export.html
 -->
 
+<head>
+  <script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
+  <link href="https://unpkg.com/slim-select@latest/dist/slimselect.css" rel="stylesheet"></link>
+</head>
+
 <style type="text/css" scoped>
   :root {
     --spacing: 0.8rem;
@@ -73,16 +78,39 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
     background-color: var(--figma-color-bg-component);
   }
 </style>
+
 <main>
-  <button id="export" type="button"> Export Variables </button>
+  <!-- <button id="export" type="button"> Export Variables </button> -->
 
-  <textarea placeholder="Exported variables will render here..."
-    readonly></textarea>
+  <!-- <textarea placeholder="Exported variables will render here..." readonly></textarea> -->
 
-  <button id="download" type="button"> Download </button>
+  <!-- <button id="download" type="button"> Download </button> -->
+
+
+  <div id="generate-screen">
+    <select id="selectElement" multiple>
+      <optgroup label="Variables" data-selectall="true" data-selectalltext="Select them all!">
+        <option value="primitive-colors">Primitive colors</option>
+        <option value="semantic-colors">Semantic colors</option>
+        <option value="primitive-typography">Primitive Typography</option>
+        <option value="semantic-typography">Semantic Typography</option>
+        <option value="sizes">Sizes</option>
+        <option value="border">Border</option>
+        <option value="opacity">Opacity</option>
+        <option value="shadow">Shadow</option>
+      </optgroup>
+    </select>
+  </div>
 </main>
 
 <script type="text/javascript">
+  // console.log($.fn.jquery)
+  new SlimSelect({
+    select: '#selectElement',
+    // selectAll: true,
+    // selectAllText: 'Select them all!',
+  })
+  
   let variables = {}
   window.onmessage = ({ data: { pluginMessage } }) => {
     if (pluginMessage.type === 'EXPORT_RESULT') {
@@ -95,7 +123,7 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
   })
 
   function downloadFile(filename, data, mimeType) {
-    
+
   }
 
   document.getElementById('download').addEventListener('click', async () => {

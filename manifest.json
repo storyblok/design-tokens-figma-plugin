@@ -11,7 +11,7 @@
   ],
   "networkAccess": {
     "allowedDomains": [
-      "none"
+      "https://unpkg.com"
     ]
   },
   "ui": {
