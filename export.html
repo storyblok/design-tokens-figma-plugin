@@ -66,6 +66,13 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
       Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
       sans-serif;
     font-weight: bold;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    background-color: var(--figma-color-bg-disabled);
+    color: var(--figma-color-text-disabled);
+    cursor: not-allowed;
   }
 
   #export {
@@ -78,10 +85,12 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
   <textarea placeholder="Exported variables will render here..."
     readonly></textarea>
 
-  <button id="download" type="button"> Download </button>
+  <button id="download" type="button" disabled> Download </button>
 </main>
 <script>
   let tokens = {}
+  let downloadButton = document.getElementById('download')
+
   window.onmessage = ({ data: { pluginMessage } }) => {
     if (pluginMessage.type === 'EXPORT_RESULT') {
       tokens = pluginMessage.tokens
@@ -90,11 +99,8 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
   }
   document.getElementById('export').addEventListener('click', () => {
     parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
+    downloadButton.disabled = false
   })
-
-  function downloadFile(filename, data, mimeType) {
-
-  }
 
   document.getElementById('download').addEventListener('click', async () => {
     const mimeType = 'application/json'
