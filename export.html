@@ -74,6 +74,13 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
     border: none;
     color: var(--figma-color-text-onbrand);
     font-weight: bold;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    background-color: var(--figma-color-bg-disabled);
+    color: var(--figma-color-text-disabled);
+    cursor: not-allowed;
   }
 
   #export {
@@ -87,80 +94,90 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
 
 <main id="app">
   <multiselect v-model="value" :options="options"></multiselect>
-  <!-- <div id="generate-screen">
-    <select id="selectElement" multiple>
-      <optgroup label="Variables" data-selectall="true" data-selectalltext="Select them all!">
-        <option value="primitive-colors">Primitive colors</option>
-        <option value="semantic-colors">Semantic colors</option>
-        <option value="primitive-typography">Primitive Typography</option>
-        <option value="semantic-typography">Semantic Typography</option>
-        <option value="sizes">Sizes</option>
-        <option value="border">Border</option>
-        <option value="opacity">Opacity</option>
-        <option value="shadow">Shadow</option>
-      </optgroup>
-    </select>
-  </div> -->
-
-  <button id="export" type="button" @click="exportJSON()"> Export Variables </button>
 
   <textarea placeholder="Exported variables will render here..." readonly></textarea>
 
-  <button id="download" type="button" @click="downloadJSON()"> Download </button>
+  <button 
+    id="export"
+    type="button" 
+    @click="exportJSON"
+  > 
+    Export Variables
+  </button>
 
-  <!-- {{ message }} -->
+  <button 
+    v-if="showDownloadButton"
+    id="download"
+    type="button"
+    @click="downloadJSON()"
+  >
+    Download
+  </button>
 </main>
 
 <script>
   const { createApp, ref } = Vue
   
   createApp({
-    // setup() {
-    //   const message = ref('Hello vue!')
-    //   return {
-    //     message
-    //   }
-    // },
-    data() {
-      return {
-        tokens: {}
-      }
+    components: {
+      Multiselect: window['vue-multiselect'].default
     },
-    methods: {
-      exportJSON() {
+    setup(props) {
+      // Global Variables
+      let tokens = ref({})
+      let showDownloadButton = ref(false)
+
+      // Multiselect Variables
+      let value = ref(null)
+      let options = ref([
+        'Primitive colors', 
+        'Semantic colors', 
+        'Primitive Typography',
+        'Semantic Typography',
+        'Sizes',
+        'Border',
+        'Opacity',
+        'shadow'
+      ])
+
+      let exportJSON = () => {
         parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
-      },
-      async downloadJSON() {
-        // const mimeType = 'application/json'
-        // const element = document.createElement('a')
-        // element.setAttribute(
-        //   'href',
-        //   `data:${mimeType};charset=utf-8,` + encodeURIComponent(JSON.stringify(this.tokens, null, 2)),
-        // )
-        // element.setAttribute('download', 'tokens.json')
+        showDownloadButton.value = true
+      }
 
-        // element.style.display = 'none'
-        // document.body.appendChild(element)
+      // let downloadJSON = () => {
+      //   const mimeType = 'application/json'
+      //   const element = document.createElement('a')
+      //   element.setAttribute(
+      //     'href',
+      //     `data:${mimeType};charset=utf-8,` + encodeURIComponent(JSON.stringify(tokens, null, 2)),
+      //   )
+      //   element.setAttribute('download', 'tokens.json')
 
-        // element.click()
+      //   element.style.display = 'none'
+      //   document.body.appendChild(element)
 
-        // document.body.removeChild(element)
-      },
+      //   element.click()
+
+      //   document.body.removeChild(element)
+      // }
+  
+      return {
+        tokens,
+        showDownloadButton,
+        value,
+        options,
+        exportJSON,
+      }
     },
     mounted() {
       let tokens = {}
+
       window.onmessage = ({ data: { pluginMessage } }) => {
         if (pluginMessage.type === 'EXPORT_RESULT') {
           tokens = pluginMessage.tokens
           document.querySelector('textarea').innerHTML = JSON.stringify(pluginMessage.tokens, null, 2)
         }
-      }
-      // document.getElementById('export').addEventListener('click', () => {
-      //   parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
-      // })
-
-      function downloadFile(filename, data, mimeType) {
-
       }
 
       document.getElementById('download').addEventListener('click', async () => {

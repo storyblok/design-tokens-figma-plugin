@@ -1,40 +1,55 @@
+# Blok.ink Design tokens
+
+![](./assets/plugin-view.png)
+
+## What is the purpose of the plugin?
+
+When we tested the Community Figma plugins to export our DS variables, we figured out that we have some specificities, like the color structure and the different themes/modes. So, we decided to use Figma's plugin architecture to develop a small plugin that gets all the variables and creates a single JSON with the structure we need to create the tokens.
+
+## How to execute the plugin locally?
+
 Below are the steps to get your plugin running. You can also find instructions at:
 
-  https://www.figma.com/plugin-docs/plugin-quickstart-guide/
+ https://www.figma.com/plugin-docs/plugin-quickstart-guide/
 
-This plugin template uses Typescript and NPM, two standard tools in creating JavaScript applications.
+This plugin template uses Typescript and NPM, two standard tools for creating JavaScript applications.
 
-First, download Node.js which comes with NPM. This will allow you to install TypeScript and other
-libraries. You can find the download link here:
+First, you will need to build the code.ts file:
 
-  https://nodejs.org/en/download/
+```sh
+# install the dependencies
+yarn
 
-Next, install TypeScript using the command:
+# build just once
+yarn build
 
-  npm install -g typescript
+# watch the changes
+yarn watch
+```
 
-Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
+Then, import the plugin using the option *Plugins -> Development -> Import plugin from manifest*
 
-  npm install --save-dev @figma/plugin-typings
+![](./assets/import-plugin.png)
 
-If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
-is already valid Typescript code.
+To execute it, just select it from the option in the *Plugins -> Development* section.
 
-TypeScript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
+## How to create the tokens?
 
-For more information, visit https://www.typescriptlang.org/
+![](./assets/export-download-tokens.gif)
 
-Using TypeScript requires a compiler to convert TypeScript (code.ts) into JavaScript (code.js)
-for the browser to run.
+When you have the plugin ready, you need to click on "Export Variables" to export these variables into a JSON, then click on "Download" to download them into a tokens.json file.
 
-We recommend writing TypeScript code using Visual Studio code:
+With this file, you need to copy it or save it in [storyfront/packages/design-tokens folder](https://github.com/storyblok/storyfront). There, you can create a js file to execute the following code snippet:
 
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Open this directory in Visual Studio Code.
-3. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-    then select "npm: watch". You will have to do this again every time
-    you reopen Visual Studio Code.
+```js
+const tokens = require('./tokens.json')
+const fs = require('fs')
 
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+for (const key in tokens) {
+  const token = tokens[key]
+  const tokenContent = token.content
+ fs.writeFileSync(`./tokens/${key}`, JSON.stringify(tokenContent, null, 2))
+}
+```
+
+This code snippet just gets the tokens.json file and splits it into separate JSONs following the folder structure in [storyfront/packages/design-tokens folder](https://github.com/storyblok/storyfront/packages/design-tokens/tokens)
