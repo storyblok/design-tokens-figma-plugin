@@ -2,9 +2,11 @@
 Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-export/export.html
 -->
 
+<!-- Vue 3 -->
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-<script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
-<link href="https://unpkg.com/slim-select@latest/dist/slimselect.css" rel="stylesheet"></link>
+<!-- Vue multiselect -->
+<script src="https://unpkg.com/vue-multiselect"></script>
+<link rel="stylesheet" href="https://unpkg.com/vue-multiselect/dist/vue-multiselect.min.css">
 
 <style type="text/css" scoped>
   :root {
@@ -20,6 +22,9 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
     color: var(--figma-color-text);
     margin: 0;
     padding: var(--spacing);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+      sans-serif;
   }
 
   html,
@@ -65,20 +70,23 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
 
   button {
     background-color: #05807F;
+    cursor: pointer;
     border: none;
     color: var(--figma-color-text-onbrand);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
-      sans-serif;
     font-weight: bold;
   }
 
   #export {
     background-color: var(--figma-color-bg-component);
   }
+
+  #export:hover {
+    background-color: green;
+  }
 </style>
 
 <main id="app">
+  <multiselect v-model="value" :options="options"></multiselect>
   <!-- <div id="generate-screen">
     <select id="selectElement" multiple>
       <optgroup label="Variables" data-selectall="true" data-selectalltext="Select them all!">
@@ -94,26 +102,50 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
     </select>
   </div> -->
 
-  <button id="export" type="button"> Export Variables </button>
+  <button id="export" type="button" @click="exportJSON()"> Export Variables </button>
 
   <textarea placeholder="Exported variables will render here..." readonly></textarea>
 
-  <button id="download" type="button"> Download </button>
+  <button id="download" type="button" @click="downloadJSON()"> Download </button>
 
-  {{ message }}
+  <!-- {{ message }} -->
 </main>
 
 <script>
   const { createApp, ref } = Vue
-
+  
   createApp({
-    setup() {
-      const message = ref('Hello vue!')
-      let tokens = {}
-
+    // setup() {
+    //   const message = ref('Hello vue!')
+    //   return {
+    //     message
+    //   }
+    // },
+    data() {
       return {
-        message
+        tokens: {}
       }
+    },
+    methods: {
+      exportJSON() {
+        parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
+      },
+      async downloadJSON() {
+        // const mimeType = 'application/json'
+        // const element = document.createElement('a')
+        // element.setAttribute(
+        //   'href',
+        //   `data:${mimeType};charset=utf-8,` + encodeURIComponent(JSON.stringify(this.tokens, null, 2)),
+        // )
+        // element.setAttribute('download', 'tokens.json')
+
+        // element.style.display = 'none'
+        // document.body.appendChild(element)
+
+        // element.click()
+
+        // document.body.removeChild(element)
+      },
     },
     mounted() {
       let tokens = {}
@@ -123,9 +155,9 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
           document.querySelector('textarea').innerHTML = JSON.stringify(pluginMessage.tokens, null, 2)
         }
       }
-      document.getElementById('export').addEventListener('click', () => {
-        parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
-      })
+      // document.getElementById('export').addEventListener('click', () => {
+      //   parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
+      // })
 
       function downloadFile(filename, data, mimeType) {
 
