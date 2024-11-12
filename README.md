@@ -35,7 +35,7 @@ To execute it, just select it from the option in the *Plugins -> Development* se
 
 ## How to create the tokens?
 
-<img src="./assets/export-download-tokens.gif" style="width: 100%">
+![](./assets/export-download-tokens.gif)
 
 When you have the plugin ready, you need to click on "Export Variables" to export these variables into a JSON, then click on "Download" to download them into a tokens.json file.
 
