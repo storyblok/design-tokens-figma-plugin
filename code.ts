@@ -79,12 +79,19 @@ const isVariableAlias = (value: VariableValue) => {
   return typeof value === 'object' && 'type' in value && 'id' in value
 }
 
+const getTokenType = (resolvedType: VariableResolvedDataType) => {
+  if (resolvedType === 'COLOR') return 'color'
+  // assuming that the only string data in tokens are font family values
+  if (resolvedType === 'STRING') return 'fontFamily'
+  return 'number'
+}
+
 const getTokenValue = async (variable: Variable, modeId: string): Promise<Token> => {
   const { resolvedType } = variable
   const value = variable.valuesByMode[modeId]
   const token = {
     // name: name,
-    $type: resolvedType === 'COLOR' ? 'color' : 'number',
+    $type: getTokenType(resolvedType),
     $value: value,
     // id: value.id,
     // alias: undefined as string | undefined,
@@ -137,7 +144,7 @@ const getVariablesFromCollection = async (modeId: string, variableIds: string[])
 
     const { resolvedType } = variable
     const value = variable.valuesByMode[modeId]
-    if (value !== undefined && ['COLOR', 'FLOAT'].includes(resolvedType)) {
+    if (value !== undefined && ['COLOR', 'FLOAT', 'STRING'].includes(resolvedType)) {
       await buildTokenData(modeId, variable, variables)
     }
   }

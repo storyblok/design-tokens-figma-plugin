@@ -14,12 +14,23 @@ Below are the steps to get your plugin running. You can also find instructions a
 
 This plugin template uses Typescript and NPM, two standard tools for creating JavaScript applications.
 
-First, you will need to build the code.ts file:
+First, you need to clone this repo:
+
+```sh
+git clone git@github.com:storyblok/design-tokens-figma-plugin.git
+```
+
+Then, install the dependencies
 
 ```sh
 # install the dependencies
 yarn
 
+```
+
+And finally just build the code to install it in Figma:
+
+```sh
 # build just once
 yarn build
 
@@ -27,7 +38,7 @@ yarn build
 yarn watch
 ```
 
-Then, import the plugin using the option *Plugins -> Development -> Import plugin from manifest*
+Then, import the plugin using the option *Plugins -> Development -> Import plugin from manifest* (this option is only available on Figma Desktop)
 
 ![](./assets/import-plugin.png)
 
