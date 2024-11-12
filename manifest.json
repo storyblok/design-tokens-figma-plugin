@@ -11,7 +11,9 @@
   ],
   "networkAccess": {
     "allowedDomains": [
-      "https://unpkg.com/"
+      "https://unpkg.com/",
+      "https://lottie.host/",
+      "https://a.storyblok.com/"
     ]
   },
   "ui": {

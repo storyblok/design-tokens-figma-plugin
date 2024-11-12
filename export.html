@@ -7,6 +7,8 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
 <!-- Vue multiselect -->
 <script src="https://unpkg.com/vue-multiselect"></script>
 <link rel="stylesheet" href="https://unpkg.com/vue-multiselect/dist/vue-multiselect.min.css">
+<!-- Lootie Animation -->
+<script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script> 
 
 <style type="text/css" scoped>
   :root {
@@ -69,7 +71,6 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
   }
 
   button {
-    background-color: #05807F;
     cursor: pointer;
     border: none;
     color: var(--figma-color-text-onbrand);
@@ -83,33 +84,129 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
     cursor: not-allowed;
   }
 
-  #export {
+  button#export {
     background-color: var(--figma-color-bg-component);
   }
 
-  #export:hover {
-    background-color: green;
+  button#export:hover {
+    background-color: var(--figma-color-bg-component-hover);
   }
+
+  button#again {
+    background-color: var(--figma-color-bg);
+    border: 2px solid var(--figma-color-border);
+  }
+
+  button#again:hover {
+    background-color: var(--figma-color-bg-secondary);
+  }
+
+  button#download {
+    background-color: #00B3B0;
+  }
+
+  button#download:hover {
+    background-color: #05807F;
+  }
+  
+  .download-actions {
+    display: inline-grid;
+    column-gap: 10px;
+    grid-template-columns: auto auto;
+  }
+
+  .multiselect__tags,
+  .multiselect__single,
+  .multiselect__input,
+  .multiselect__content {
+    background-color: var(--figma-color-bg-secondary);
+    color: var(--figma-color-text-secondary);
+  }
+
+  ::placeholder {
+    color: var(--figma-color-text-secondary);
+    opacity: 1; /* Firefox */
+  }
+
+  .multiselect__option--selected {
+    background-color: var(--figma-color-bg-primary);
+    color: var(--figma-color-text-primary);
+  }
+
+  .multiselect__tags {
+    border: 2px solid var(--figma-color-border);
+  }
+
+  .multiselect__content-wrapper {
+    border-bottom: 2px solid var(--figma-color-border);
+    border-left: 2px solid var(--figma-color-border);
+    border-right: 2px solid var(--figma-color-border);
+  }
+
+  .image-area {
+    background-color: var(--figma-color-bg-secondary);
+    border: 2px;
+    color: var(--figma-color-text-secondary);
+    flex: 1;
+    overflow: auto;
+    padding: var(--spacing);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  .image-area img {  
+    display: block;
+    width: 30%;
+    max-width: 500px; /*actual image width*/
+    height: auto; /* maintain aspect ratio*/
+    margin: auto; /*optional centering of image*/
+  }
+
+  .image-area p {
+    text-align: center;
+  }
+
+
 </style>
 
 <main id="app">
   <multiselect v-model="value" :options="options" :multiple="true" :close-on-select="false" :clear-on-select="false"
-  :preserve-search="true" placeholder="Pick some" :preselect-first="true" disabled="true">
+  :preserve-search="true" placeholder="Pick some">
     <template #selection="{ values, search, isOpen }">
       <span
         class="multiselect__single"
         v-if="values.length"
         v-show="!isOpen"
       >
-        <!-- {{ values.length }} options selected -->
-        All Variables Selected
+        {{ values.length < 8 ? `${values.length} options selected`:'All variables' }}
       </span>
     </template>
-
   </multiselect>
 
-  <textarea placeholder="Exported variables will render here..." readonly></textarea>
+  <div v-show="!showDownloadButton" class="image-area">
+    <div v-show="!isLoading" class="action-info">
+      <img src="https://a.storyblok.com/f/154577/58x58/316af1adb0/iconoir_frame-select.png" alt="" style="">
+      <p>Select <strong>variables</strong> and generate your <strong>JSON</strong></p>
+    </div>
 
+    <dotlottie-player
+      v-show="isLoading"
+      src="https://lottie.host/b21564f0-4d11-4042-9574-0eb1643062ce/kBW1nbPRsH.json"
+      background="transparent" 
+      speed="1" 
+      style="width: 300px; height: 300px;" 
+      loop
+      autoplay
+    ></dotlottie-player>
+  </div>
+
+  <textarea
+    v-show="showDownloadButton"
+    placeholder="Exported variables will render here..."
+    readonly
+  ></textarea>
 
   <button
     v-show="!showDownloadButton"
@@ -120,14 +217,26 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
     Export Variables
   </button>
 
-  <button 
+  <div 
     v-show="showDownloadButton"
-    id="download"
-    type="button"
-    @click="downloadJSON()"
-  > 
-    Download
-  </button>
+    class="download-actions"
+  >
+    <button
+      id="again"
+      type="button"
+      @click="exportJSON"
+    >
+      Generate Again
+    </button>
+  
+    <button
+      id="download"
+      type="button"
+      @click="downloadJSON"
+    > 
+      Download JSON
+    </button>
+  </div>
 </main>
 
 <script>
@@ -139,6 +248,7 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
     },
     setup(props) {
       let tokens = ref({})
+      let isLoading = ref(false)
       let showDownloadButton = ref(false)
 
       let value = ref([
@@ -162,31 +272,23 @@ Based on: https://github.com/figma/plugin-samples/blob/master/variables-import-e
         'shadow'
       ])
 
-      let exportJSON = () => {
-        parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
-        showDownloadButton.value = true
+      let logIn = () => {
+        isLoading.value = true;
+        showDownloadButton.value = false
+        setTimeout(() => {
+          isLoading.value = false
+          showDownloadButton.value = true
+        }, 3000);
       }
 
-      // let downloadJSON = () => {
-      //   const mimeType = 'application/json'
-      //   const element = document.createElement('a')
-      //   element.setAttribute(
-      //     'href',
-      //     `data:${mimeType};charset=utf-8,` + encodeURIComponent(JSON.stringify(tokens, null, 2)),
-      //   )
-      //   element.setAttribute('download', 'tokens.json')
+      let exportJSON = () => {
+        parent.postMessage({ pluginMessage: { type: 'EXPORT' } }, '*')
+        logIn()
+      }
 
-      //   element.style.display = 'none'
-      //   document.body.appendChild(element)
-
-      //   element.click()
-
-      //   document.body.removeChild(element)
-      // }
-  
       return {
-        tokens,
         showDownloadButton,
+        isLoading,
         value,
         options,
         exportJSON,
