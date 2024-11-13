@@ -51,6 +51,29 @@ const variablesDb = {} as {
   [key in keyof typeof COLLECTION_MAPPING]: TokenData
 }
 
+const textStylesJSON = {} as {
+  [key: string]: TokenData
+}
+
+const effectStylesJSON = {} as {
+  [key: string]: TokenData
+}
+
+function set(obj: unknown, path: string[], value: unknown): unknown {
+  path.reduce((acc, key, index) => {
+    if (index === path.length - 1) {
+      acc[key] = value;
+    } else {
+      if (!acc[key]) {
+        acc[key] = {};
+      }
+    }
+    return acc[key];
+  }, obj);
+
+  return obj;
+}
+
 const rgbToHex = (data: VariableValue) => {
   const { r, g, b, a } = data as RGBA
   if (a !== 1) {
@@ -67,12 +90,14 @@ const rgbToHex = (data: VariableValue) => {
   return `#${hex}`;
 }
 
+const sanitizeCollectionName = (name: string) => name.split('.')[1].trim()
+
 const getCollectionName = (collection: VariableCollection | null) => {
   if (!collection) {
     return ''
   }
 
-  return COLLECTION_MAPPING[collection.name.split('.')[1].trim()]
+  return COLLECTION_MAPPING[sanitizeCollectionName(collection.name)]
 }
 
 const isVariableAlias = (value: VariableValue) => {
@@ -191,7 +216,10 @@ const createJsonFiles = () => {
   finalJSON['typography.json'] = {
     file: 'typography.json',
     content: {
-      typography: typographyJson
+      typography: {
+        ...typographyJson,
+        ...textStylesJSON
+      }
     }
   }
 
@@ -295,7 +323,72 @@ const createJsonFiles = () => {
     }
   }
 
+  finalJSON['shadows.json'] = {
+    file: 'shadows.json',
+    content: effectStylesJSON
+  }
+
   return JSON.parse(JSON.stringify(finalJSON).replaceAll('base-color', 'color'))
+}
+
+const processTextStyle = async (style: TextStyle, collection: VariableCollection | undefined) => {
+  const modeId = collection?.modes[0].modeId || ''
+  for (const key in style.boundVariables) {
+    const variable = style.boundVariables[key as VariableBindableTextField]
+    const value = await figma.variables.getVariableByIdAsync(
+      variable?.id || ''
+    )
+    if (!value) {
+      continue
+    }
+    const token = await getTokenValue(value, modeId)
+    const howManySlashes = style.name.split('/').length
+    // maybe you can use https://lodash.com/docs/4.17.15#set
+    if (howManySlashes === 2) {
+      const [group, name] = style.name.split('/')
+      textStylesJSON[group] = textStylesJSON[group] || {}
+      textStylesJSON[group][name] = textStylesJSON[group][name] || {}
+      textStylesJSON[group][name][key] = token
+      // return textStylesJSON
+    } else if (howManySlashes === 3) {
+      const [group, parent, name] = style.name.split('/')
+      textStylesJSON[group] = textStylesJSON[group] || {}
+      textStylesJSON[group][parent] = textStylesJSON[group][parent] || {}
+      textStylesJSON[group][parent][name] = textStylesJSON[group][parent][name] || {}
+      
+      textStylesJSON[group][parent][name][key] = token
+    }
+  }
+}
+
+const processEffectStyle = async (style: EffectStyle) => {
+  const effects = style.effects[0]
+  const token = {
+    radius: {
+      $type: 'number',
+      $value: effects.radius
+    },
+    spread: {
+      $type: 'number',
+      $value: effects.spread
+    },
+    offset: {
+      y: {
+        $type: 'number',
+        $value: effects.offset.y
+      },
+      x: {
+        $type: 'number',
+        $value: effects.offset.x
+      },
+    },
+    color: {
+      $type: 'color',
+      $value: rgbToHex(effects.color)
+    }
+  }
+
+  set(effectStylesJSON, style.name.split('/'), token)
 }
 
 async function exportToJSON() {
@@ -305,6 +398,24 @@ async function exportToJSON() {
   for (const collection of collections) {
     await processCollection(collection)
   }
+  
+  const collection = collections.find((collection) => {
+    return sanitizeCollectionName(collection.name) === 'Typography'
+  })
+  const textStyles = await figma.getLocalTextStylesAsync()
+  for (const style of textStyles) {
+    await processTextStyle(style, collection)
+  }
+  
+  const effectStyles = await figma.getLocalEffectStylesAsync()
+  for (const style of effectStyles) {
+    // this Effect Style does not have any bound variables
+    if (style.name === 'Shadow') {
+      continue
+    }
+    await processEffectStyle(style)
+  }
+
   const result = createJsonFiles()
   
   figma.ui.postMessage({ type: 'EXPORT_RESULT', tokens: result })
