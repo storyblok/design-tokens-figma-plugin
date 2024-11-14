@@ -115,6 +115,11 @@ const getVariableValue = (variable: Variable, modeId: string) => {
     return Number(value.toFixed(2))
   }
 
+  const valuesToPx = ['size/', 'unit/', 'view_port/', 'radius/', 'width/']
+  if (valuesToPx.some(value => variable.name.includes(value)) && variable.resolvedType === 'FLOAT' && typeof value === 'number') {
+    return `${value}px`
+  }
+
   return value
 }
 
