@@ -120,6 +120,10 @@ const getVariableValue = (variable: Variable, modeId: string) => {
     return `${value}px`
   }
 
+  if (variable.name.includes('level/') && variable.resolvedType === 'FLOAT' && typeof value === 'number') {
+    return `${value}%`
+  }
+
   return value
 }
 
