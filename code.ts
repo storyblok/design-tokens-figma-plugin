@@ -109,9 +109,18 @@ const getTokenType = (resolvedType: VariableResolvedDataType) => {
   return 'number'
 }
 
+const getVariableValue = (variable: Variable, modeId: string) => {
+  const value = variable.valuesByMode[modeId]
+  if (variable.name.includes('line_height/') && variable.resolvedType === 'FLOAT' && typeof value === 'number') {
+    return Number(value.toFixed(2))
+  }
+
+  return value
+}
+
 const getTokenValue = async (variable: Variable, modeId: string): Promise<Token> => {
   const { resolvedType } = variable
-  const value = variable.valuesByMode[modeId]
+  const value = getVariableValue(variable, modeId)
   const token = {
     $type: getTokenType(resolvedType),
     $value: value,
@@ -143,10 +152,10 @@ const getVariableAlias = async (variableAlias: VariableAlias | undefined) => {
 
 const getLineHeightVariable = (value: number) => {
   const variables = variablesDb.font.line_height
-  const valueToCheck = (value / 100).toFixed(2)
+  const valueToCheck = Number((value / 100).toFixed(2))
   const keyFound = Object.keys(variables).reduce((acc: string, key: string) => {
     if (acc) return acc
-    if (variables[key].$value.toFixed(2) === valueToCheck) return key
+    if (variables[key].$value === valueToCheck) return key
     return ''
   }, '')
   
@@ -319,15 +328,9 @@ const processTextStyle = async (style: TextStyle) => {
     $type: 'typography',
     $value: {
       fontFamily: await getVariableAlias(boundVariables?.fontFamily),
-      fontSize: {
-        value: await getVariableAlias(boundVariables?.fontSize),
-        unit: 'px'
-      },
+      fontSize: await getVariableAlias(boundVariables?.fontSize),
       fontWeight: await getVariableAlias(boundVariables?.fontWeight),
-      letterSpacing: {
-        value: await getVariableAlias(boundVariables?.letterSpacing),
-        unit: 'px'
-      },
+      letterSpacing: await getVariableAlias(boundVariables?.letterSpacing),
       lineHeight: getLineHeightVariable(style?.lineHeight.value),
     }
   }
