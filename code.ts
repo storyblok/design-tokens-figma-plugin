@@ -3,8 +3,6 @@
 type Token = {
   $type: string
   $value: VariableValue
-  // id: string
-  // alias: string | undefined
 }
 
 figma.showUI(__uiFiles__['export'], {
@@ -16,7 +14,7 @@ figma.showUI(__uiFiles__['export'], {
 const COLLECTION_MAPPING = {
   Sizes: 'size',
   'Color Tokens': 'color',
-  Typography: 'typography',
+  Typography: 'font',
   Border: 'border',
   Opacity: 'opacity',
   'Base Colors': 'base-color',
@@ -62,16 +60,16 @@ const effectStylesJSON = {} as {
 function set(obj: unknown, path: string[], value: unknown): unknown {
   path.reduce((acc, key, index) => {
     if (index === path.length - 1) {
-      acc[key] = value;
+      acc[key] = value
     } else {
       if (!acc[key]) {
-        acc[key] = {};
+        acc[key] = {}
       }
     }
-    return acc[key];
-  }, obj);
+    return acc[key]
+  }, obj)
 
-  return obj;
+  return obj
 }
 
 const rgbToHex = (data: VariableValue) => {
@@ -115,11 +113,8 @@ const getTokenValue = async (variable: Variable, modeId: string): Promise<Token>
   const { resolvedType } = variable
   const value = variable.valuesByMode[modeId]
   const token = {
-    // name: name,
     $type: getTokenType(resolvedType),
     $value: value,
-    // id: value.id,
-    // alias: undefined as string | undefined,
   }
   if (isVariableAlias(value) && value.type === 'VARIABLE_ALIAS') {
     const currentVar = await figma.variables.getVariableByIdAsync(
@@ -185,7 +180,7 @@ async function processCollection(variableColection: VariableCollection) {
   for (const mode of variableColection.modes) {
     const modeName = MODE_MAPPING[mode.name]
     const result = await getVariablesFromCollection(mode.modeId, variableIds)
-    if (!['base-color', 'size', 'typography', 'border'].includes(collectionName)) {
+    if (!['base-color', 'size', 'font', 'border'].includes(collectionName)) {
       variablesDb[collectionName][modeName] = variablesDb[collectionName][modeName] || {}
       variablesDb[collectionName][modeName] = result
       continue
@@ -212,14 +207,18 @@ const createJsonFiles = () => {
     }
   }
 
-  const typographyJson = variablesDb['typography']
+  const fontJson = variablesDb['font']
+  finalJSON['font.json'] = {
+    file: 'font.json',
+    content: {
+      font: fontJson
+    }
+  }
+
   finalJSON['typography.json'] = {
     file: 'typography.json',
     content: {
-      typography: {
-        ...typographyJson,
-        ...textStylesJSON
-      }
+      typography: textStylesJSON
     }
   }
 
