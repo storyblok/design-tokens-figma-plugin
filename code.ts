@@ -305,8 +305,8 @@ const createJsonFiles = () => {
     }
   }
 
-  finalJSON['shadows.json'] = {
-    file: 'shadows.json',
+  finalJSON['shadow.json'] = {
+    file: 'shadow.json',
     content: effectStylesJSON
   }
 
@@ -341,34 +341,10 @@ const processEffectStyle = async (style: EffectStyle) => {
     $type: 'shadow',
     $value: {
       color: rgbToHex(effects.color),
-      offsetX: {
-        $type: 'dimension',
-        $value: {
-          value: effects.offset.x,
-          unit: 'px'
-        }
-      },
-      offsetY: {
-        $type: 'dimension',
-        $value: {
-          value: effects.offset.y,
-          unit: 'px'
-        }
-      },
-      blur: {
-        $type: 'dimension',
-        $value: {
-          value: effects.radius,
-          unit: 'px'
-        }
-      },
-      spread: {
-        $type: 'dimension',
-        $value: {
-          value: effects.spread,
-          unit: 'px'
-        }
-      }
+      offsetX: `${effects.offset.x}px`,
+      offsetY: `${effects.offset.y}px`,
+      blur: `${effects.radius}px`,
+      spread: `${effects.spread}px`,
     },
   }
 
