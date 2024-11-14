@@ -339,7 +339,6 @@ const processTextStyle = async (style: TextStyle) => {
       fontFamily: await getVariableAlias(boundVariables?.fontFamily),
       fontSize: await getVariableAlias(boundVariables?.fontSize),
       fontWeight: await getVariableAlias(boundVariables?.fontWeight),
-      letterSpacing: await getVariableAlias(boundVariables?.letterSpacing),
       lineHeight: getLineHeightVariable(style?.lineHeight.value),
     }
   }
