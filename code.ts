@@ -203,7 +203,7 @@ async function processCollection(variableColection: VariableCollection) {
   for (const mode of variableColection.modes) {
     const modeName = MODE_MAPPING[mode.name]
     const result = await getVariablesFromCollection(mode.modeId, variableIds)
-    if (!['base-color', 'size', 'font', 'border'].includes(collectionName)) {
+    if (!['base-color', 'size', 'font', 'border', 'opacity'].includes(collectionName)) {
       variablesDb[collectionName][modeName] = variablesDb[collectionName][modeName] || {}
       variablesDb[collectionName][modeName] = result
       continue
@@ -215,7 +215,7 @@ async function processCollection(variableColection: VariableCollection) {
 
 
 const createJsonFiles = () => {
-  // console.log('variablesDb', variablesDb)
+  console.log('variablesDb', variablesDb)
   const finalJSON = {} as {
     [key: string]: {
       file: string
@@ -254,51 +254,11 @@ const createJsonFiles = () => {
   }
 
   const opacityJson = variablesDb['opacity']
-  finalJSON['opacity/base.json'] = {
+  finalJSON['opacity.json'] = {
     file: 'base.json',
     content: {
       opacity: {
-        level: opacityJson.default.level
-      }
-    }
-  }
-  finalJSON['opacity/default.json'] = {
-    file: 'default.json',
-    content: {
-      opacity: {
-        default: {
-          background: opacityJson.default.background
-        }
-      }
-    }
-  }
-  finalJSON['opacity/dark.json'] = {
-    file: 'dark.json',
-    content: {
-      opacity: {
-        dark: {
-          background: opacityJson.dark.background
-        }
-      }
-    }
-  }
-  finalJSON['opacity/dark-contrast.json'] = {
-    file: 'dark-contrast.json',
-    content: {
-      opacity: {
-        'dark-contrast': {
-          background: opacityJson['dark-contrast'].background
-        }
-      }
-    }
-  }
-  finalJSON['opacity/light-contrast.json'] = {
-    file: 'light-contrast.json',
-    content: {
-      opacity: {
-        'light-contrast': {
-          background: opacityJson['light-contrast'].background
-        }
+        level: opacityJson.level
       }
     }
   }
@@ -353,7 +313,7 @@ const createJsonFiles = () => {
   return JSON.parse(JSON.stringify(finalJSON).replaceAll('base-color', 'color'))
 }
 
-const processTextStyle = async (style: TextStyle) => 
+const processTextStyle = async (style: TextStyle) => {
   const boundVariables = style.boundVariables
   const tokenData = {
     $type: 'typography',
