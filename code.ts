@@ -130,6 +130,29 @@ const getTokenValue = async (variable: Variable, modeId: string): Promise<Token>
   return token
 }
 
+const getVariableAlias = async (variableAlias: VariableAlias | undefined) => {
+  if (!variableAlias) return undefined
+
+  const currentVar = await figma.variables.getVariableByIdAsync(
+    variableAlias.id
+  )
+  const aliasCollection = await figma.variables.getVariableCollectionByIdAsync(currentVar?.variableCollectionId || '')
+  const aliasCollectionName = getCollectionName(aliasCollection)
+  return `{${aliasCollectionName}.${currentVar?.name.replace(/\//g, '.')}}`
+}
+
+const getLineHeightVariable = (value: number) => {
+  const variables = variablesDb.font.line_height
+  const valueToCheck = (value / 100).toFixed(2)
+  const keyFound = Object.keys(variables).reduce((acc: string, key: string) => {
+    if (acc) return acc
+    if (variables[key].$value.toFixed(2) === valueToCheck) return key
+    return ''
+  }, '')
+  
+  return `{font.line_height.${keyFound}}`
+}
+
 const buildTokenData = async (modeId: string, variable: Variable, variables: TokenData = {}) => {
   const howManySlashes = variable.name.split('/').length
   // for example, background/primary
@@ -330,61 +353,63 @@ const createJsonFiles = () => {
   return JSON.parse(JSON.stringify(finalJSON).replaceAll('base-color', 'color'))
 }
 
-const processTextStyle = async (style: TextStyle, collection: VariableCollection | undefined) => {
-  const modeId = collection?.modes[0].modeId || ''
-  for (const key in style.boundVariables) {
-    const variable = style.boundVariables[key as VariableBindableTextField]
-    const value = await figma.variables.getVariableByIdAsync(
-      variable?.id || ''
-    )
-    if (!value) {
-      continue
-    }
-    const token = await getTokenValue(value, modeId)
-    const howManySlashes = style.name.split('/').length
-    // maybe you can use https://lodash.com/docs/4.17.15#set
-    if (howManySlashes === 2) {
-      const [group, name] = style.name.split('/')
-      textStylesJSON[group] = textStylesJSON[group] || {}
-      textStylesJSON[group][name] = textStylesJSON[group][name] || {}
-      textStylesJSON[group][name][key] = token
-      // return textStylesJSON
-    } else if (howManySlashes === 3) {
-      const [group, parent, name] = style.name.split('/')
-      textStylesJSON[group] = textStylesJSON[group] || {}
-      textStylesJSON[group][parent] = textStylesJSON[group][parent] || {}
-      textStylesJSON[group][parent][name] = textStylesJSON[group][parent][name] || {}
-      
-      textStylesJSON[group][parent][name][key] = token
+const processTextStyle = async (style: TextStyle) => 
+  const boundVariables = style.boundVariables
+  const tokenData = {
+    $type: 'typography',
+    $value: {
+      fontFamily: await getVariableAlias(boundVariables?.fontFamily),
+      fontSize: {
+        value: await getVariableAlias(boundVariables?.fontSize),
+        unit: 'px'
+      },
+      fontWeight: await getVariableAlias(boundVariables?.fontWeight),
+      letterSpacing: {
+        value: await getVariableAlias(boundVariables?.letterSpacing),
+        unit: 'px'
+      },
+      lineHeight: getLineHeightVariable(style?.lineHeight.value),
     }
   }
+
+  set(textStylesJSON, style.name.split('/'), tokenData)
 }
 
 const processEffectStyle = async (style: EffectStyle) => {
   const effects = style.effects[0]
   const token = {
-    radius: {
-      $type: 'number',
-      $value: effects.radius
-    },
-    spread: {
-      $type: 'number',
-      $value: effects.spread
-    },
-    offset: {
-      y: {
-        $type: 'number',
-        $value: effects.offset.y
+    $type: 'shadow',
+    $value: {
+      color: rgbToHex(effects.color),
+      offsetX: {
+        $type: 'dimension',
+        $value: {
+          value: effects.offset.x,
+          unit: 'px'
+        }
       },
-      x: {
-        $type: 'number',
-        $value: effects.offset.x
+      offsetY: {
+        $type: 'dimension',
+        $value: {
+          value: effects.offset.y,
+          unit: 'px'
+        }
       },
+      blur: {
+        $type: 'dimension',
+        $value: {
+          value: effects.radius,
+          unit: 'px'
+        }
+      },
+      spread: {
+        $type: 'dimension',
+        $value: {
+          value: effects.spread,
+          unit: 'px'
+        }
+      }
     },
-    color: {
-      $type: 'color',
-      $value: rgbToHex(effects.color)
-    }
   }
 
   set(effectStylesJSON, style.name.split('/'), token)
@@ -397,13 +422,10 @@ async function exportToJSON() {
   for (const collection of collections) {
     await processCollection(collection)
   }
-  
-  const collection = collections.find((collection) => {
-    return sanitizeCollectionName(collection.name) === 'Typography'
-  })
+
   const textStyles = await figma.getLocalTextStylesAsync()
   for (const style of textStyles) {
-    await processTextStyle(style, collection)
+    await processTextStyle(style)
   }
   
   const effectStyles = await figma.getLocalEffectStylesAsync()
@@ -416,6 +438,8 @@ async function exportToJSON() {
   }
 
   const result = createJsonFiles()
+
+  console.log('result', result)
   
   figma.ui.postMessage({ type: 'EXPORT_RESULT', tokens: result })
 }
