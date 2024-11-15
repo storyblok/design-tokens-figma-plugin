@@ -172,26 +172,8 @@ const getLineHeightVariable = (value: number) => {
 }
 
 const buildTokenData = async (modeId: string, variable: Variable, variables: TokenData = {}) => {
-  const howManySlashes = variable.name.split('/').length
-  // for example, background/primary
-  // it should be: { background: { primary: { $type: 'color', $value: '#000000' } } }
-  if (howManySlashes === 2) {
-    const [group, name] = variable.name.split('/')
-    variables[group] = variables[group] || {}
-    variables[group][name] = await getTokenValue(variable, modeId)
-    return variables
-  }
-
-  // for example, button/background/primary
-  // it should be: { button: { background: { primary: { $type: 'color', $value: '#000000' } } } }
-  if (howManySlashes === 3) {
-    const [group, parent, name] = variable.name.split('/')
-    variables[group] = variables[group] || {}
-    variables[group][parent] = variables[group][parent] || {}
-    
-    variables[group][parent][name] = await getTokenValue(variable, modeId)
-    return variables
-  }
+  set(variables, variable.name.split('/'), await getTokenValue(variable, modeId))
+  return variables
 }
 
 const getVariablesFromCollection = async (modeId: string, variableIds: string[]) => {
