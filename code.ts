@@ -25,8 +25,8 @@ const COLLECTION_MAPPING = {
 const MODE_MAPPING = {
   Default: 'default',
   Dark: 'dark',
-  'Light – High Contrast': 'light-contrast',
-  'Dark – High Contrast': 'dark-contrast',
+  'Light – High Contrast': 'light-high-contrast',
+  'Dark – High Contrast': 'dark-high-contrast',
   desktop: 'default',
   'Mode 1': 'default', // Typography
 } as {
@@ -288,19 +288,19 @@ const createJsonFiles = () => {
       }
     }
   }
-  finalJSON['colors/dark-contrast.json'] = {
-    file: 'dark-contrast.json',
+  finalJSON['colors/dark-high-contrast.json'] = {
+    file: 'dark-high-contrast.json',
     content: {
       color: {
-        'dark-contrast': colorJson['dark-contrast']
+        'dark-high-contrast': colorJson['dark-high-contrast']
       }
     }
   }
-  finalJSON['colors/light-contrast.json'] = {
-    file: 'light-contrast.json',
+  finalJSON['colors/light-high-contrast.json'] = {
+    file: 'light-high-contrast.json',
     content: {
       color: {
-        'light-contrast': colorJson['light-contrast']
+        'light-high-contrast': colorJson['light-high-contrast']
       }
     }
   }
