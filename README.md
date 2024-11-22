@@ -52,6 +52,8 @@ When you have the plugin ready, you need to click on "Export Variables" to expor
 
 With this file, you need to copy it or save it in [storyfront/packages/design-tokens folder](https://github.com/storyblok/storyfront). There, you can create a js file to execute the following code snippet:
 
+The following code works in a CommonJS environment
+
 ```js
 const tokens = require('./tokens.json')
 const fs = require('fs')
@@ -60,6 +62,19 @@ for (const key in tokens) {
   const token = tokens[key]
   const tokenContent = token.content
  fs.writeFileSync(`./tokens/${key}`, JSON.stringify(tokenContent, null, 2))
+}
+```
+
+This one is about the ESModules environment (please, use it instead):
+
+```js
+import tokens from './tokens.json' assert { type: 'json' }
+import fs from 'fs'
+
+for (const key in tokens) {
+  const token = tokens[key]
+  const tokenContent = token.content
+  fs.writeFileSync(`./tokens/${key}`, JSON.stringify(tokenContent, null, 2))
 }
 ```
 
