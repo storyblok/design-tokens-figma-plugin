@@ -5,6 +5,15 @@ type Token = {
   $value: VariableValue
 }
 
+const TEXT_CASES = {
+  ORIGINAL: '{font.case.original}',
+  UPPER: '{font.case.uppercase}',
+  LOWER: '{font.case.lowercase}',
+  TITLE: '{font.case.capitalize}',
+  SMALL_CAPS: '{font.case.none}',
+  SMALL_CAPS_FORCED: '{font.case.none}',
+}
+
 figma.showUI(__uiFiles__['export'], {
   width: 500,
   height: 500,
@@ -330,7 +339,9 @@ const processTextStyle = async (style: TextStyle) => {
       fontFamily: await getVariableAlias(boundVariables?.fontFamily),
       fontSize: await getVariableAlias(boundVariables?.fontSize),
       fontWeight: await getVariableAlias(boundVariables?.fontWeight),
+      letterSpacing: await getVariableAlias(boundVariables?.letterSpacing),
       lineHeight: getLineHeightVariable(style?.lineHeight.value),
+      textCase: TEXT_CASES[style.textCase],
     }
   }
 
