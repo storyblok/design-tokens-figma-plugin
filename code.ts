@@ -66,6 +66,8 @@ const effectStylesJSON = {} as {
   [key: string]: TokenData
 }
 
+const htmlFontSize = 16;
+
 function set(obj: unknown, path: string[], value: unknown): unknown {
   path.reduce((acc, key, index) => {
     if (index === path.length - 1) {
@@ -131,7 +133,7 @@ const getVariableValue = (variable: Variable, modeId: string) => {
 
   const valuesToRem = ['size/']
   if (valuesToRem.some(value => variable.name.includes(value)) && variable.resolvedType === 'FLOAT' && typeof value === 'number') {
-    return `${value / 10}rem`
+    return `${value / htmlFontSize}rem`
   }
 
   if (variable.name.includes('level/') && variable.resolvedType === 'FLOAT' && typeof value === 'number') {
